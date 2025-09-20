@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Saturno del Amor</title>
+  <style>
+    :root{
+      --bg1:#0b1020;
+      --bg2:#23102f;
+      --accent:#ff6b9a;
+      --accent2:#ffd1e0;
+    }
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{
+      background: radial-gradient(circle at 50% 30%, rgba(255,183,197,0.08) 0%, transparent 40%),
+                  radial-gradient(circle at 80% 80%, rgba(120,90,180,0.08) 0%, transparent 30%),
+                  linear-gradient(180deg,var(--bg1),var(--bg2));
+      overflow:hidden;display:flex;align-items:center;justify-content:center;color:white;
+    }
+    canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+    .stage{position:relative;width:100%;height:100%;}
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <canvas id="universe"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("universe");
+    const ctx = canvas.getContext("2d");
+    let W = canvas.width = window.innerWidth;
+    let H = canvas.height = window.innerHeight;
+
+    window.addEventListener("resize", ()=>{
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    });
+
+    // Utilidad aleatoria
+    const rand = (min,max)=> Math.random()*(max-min)+min;
+
+    // Estrellas de fondo
+    const stars = [];
+    function initStars(n=150){
+      stars.length=0;
+      for(let i=0;i<n;i++){
+        stars.push({
+          x: Math.random()*W,
+          y: Math.random()*H,
+          r: Math.random()*1.2+0.2,
+          alpha: Math.random()*0.8+0.2
+        });
+      }
+    }
+
+    // Planeta Saturno en el centro
+    function drawSaturn(){
+      const x = W/2, y = H/2;
+      const radius = 60;
+
+      // planeta
+      const grad = ctx.createRadialGradient(x-20,y-20,20,x,y,radius+40);
+      grad.addColorStop(0,"#ffddb5");
+      grad.addColorStop(0.5,"#d39f68");
+      grad.addColorStop(1,"#805b32");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x,y,radius,0,Math.PI*2);
+      ctx.fill();
+
+      // anillos
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.rotate(-0.4);
+      ctx.strokeStyle="rgba(255,200,150,0.7)";
+      for(let i=0;i<3;i++){
+        ctx.beginPath();
+        ctx.ellipse(0,0,radius+25+i*8,(radius+25+i*8)*0.35,0,0,Math.PI*2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Palabras "Te amo" orbitando
+    class OrbitText{
+      constructor(angle, distance){
+        this.angle = angle;
+        this.distance = distance;
+        this.speed = rand(0.001,0.003);
+      }
+      update(dt){
+        this.angle += this.speed*dt;
+      }
+      draw(){
+        const x = W/2 + Math.cos(this.angle)*this.distance;
+        const y = H/2 + Math.sin(this.angle)*this.distance*0.6; // óvalo
+        ctx.save();
+        ctx.fillStyle = "#ffd1e0";
+        ctx.font = "bold 22px Arial";
+        ctx.textAlign="center";
+        ctx.textBaseline="middle";
+        ctx.shadowColor="#ff6b9a";
+        ctx.shadowBlur=15;
+        ctx.fillText("Te amo",x,y);
+        ctx.restore();
+      }
+    }
+
+    const texts = [];
+    for(let i=0;i<8;i++){
+      texts.push(new OrbitText((Math.PI*2/8)*i, 140));
+    }
+
+    // Animación
+    let last = performance.now();
+    function loop(t){
+      const dt = t-last; last=t;
+      update(dt);
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    function update(dt){
+      texts.forEach(txt=>txt.update(dt));
+    }
+
+    function render(){
+      ctx.clearRect(0,0,W,H);
+
+      // Fondo oscuro
+      const g = ctx.createLinearGradient(0,0,W,H);
+      g.addColorStop(0,'rgba(255,230,250,0.02)');
+      g.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=g;
+      ctx.fillRect(0,0,W,H);
+
+      // estrellas
+      for(const s of stars){
+        ctx.globalAlpha = s.alpha;
+        ctx.fillStyle="white";
+        ctx.beginPath();
+        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fill();
+      }
+      ctx.globalAlpha=1;
+
+      // saturno
+      drawSaturn();
+
+      // textos orbitando
+      texts.forEach(txt=>txt.draw());
+    }
+
+    initStars(Math.round((W*H)/7000));
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
+
